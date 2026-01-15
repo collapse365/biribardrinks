@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 
 /**
@@ -115,16 +116,18 @@ export const db = {
 
   async signOut() {
     try {
-      // Logout global no Supabase
+      // Logout global para invalidar o token no servidor
       await supabase.auth.signOut({ scope: 'global' });
       
-      // Limpeza de tokens no localStorage e sessionStorage
-      [localStorage, sessionStorage].forEach(storage => {
-        Object.keys(storage).forEach(key => {
-          if (key.startsWith('sb-') || key.includes('supabase')) {
-            storage.removeItem(key);
-          }
-        });
+      // Limpeza manual de qualquer dado remanescente
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Limpar cookies específicos do Supabase (se houver)
+      document.cookie.split(";").forEach((c) => {
+        document.cookie = c
+          .replace(/^ +/, "")
+          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
       });
     } catch (e) {
       console.error("Erro no signOut:", e);

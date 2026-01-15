@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Menu, X, ChevronRight, Lock, LogOut, LayoutDashboard } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
@@ -37,13 +38,18 @@ const Header: React.FC<HeaderProps> = ({ scrolled }) => {
 
   const handleLogout = async () => {
     if (window.confirm('Deseja realmente sair do sistema?')) {
-      await db.signOut();
-      // Limpa estado local do componente
-      setUser(null);
-      setIsOpen(false);
-      // Força redirecionamento via navegador para o início, ignorando o hash do Router
-      // para garantir que a aplicação seja reinicializada sem cache de sessão.
-      window.location.href = window.location.origin + window.location.pathname;
+      try {
+        await db.signOut();
+        // Limpa estado local do componente antes do reload
+        setUser(null);
+        setIsOpen(false);
+        // Redirecionamento nuclear: remove hash e força reload da página
+        const baseUrl = window.location.origin + window.location.pathname;
+        window.location.replace(baseUrl);
+      } catch (err) {
+        console.error('Erro ao sair:', err);
+        window.location.reload();
+      }
     }
   };
 
