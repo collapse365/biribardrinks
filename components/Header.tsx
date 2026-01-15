@@ -1,0 +1,123 @@
+
+import React, { useState } from 'react';
+import { Menu, X, ChevronRight, Lock } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
+interface HeaderProps {
+  scrolled: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ scrolled }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const navItems = [
+    { name: 'Início', target: 'home', isExternal: false },
+    { name: 'Serviços', target: 'services', isExternal: false },
+    { name: 'Galeria', target: 'https://instagram.com/biribardrinks', isExternal: true },
+    { name: 'Depoimentos', target: 'testimonials', isExternal: false },
+  ];
+
+  const scrollToSection = (id: string) => {
+    setIsOpen(false);
+    const element = document.getElementById(id);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  const handleNavClick = (item: { name: string; target: string; isExternal: boolean }) => {
+    if (item.isExternal) {
+      window.open(item.target, '_blank', 'noopener,noreferrer');
+      setIsOpen(false);
+    } else {
+      scrollToSection(item.target);
+    }
+  };
+
+  return (
+    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      scrolled 
+        ? 'bg-brand-richBlack/95 backdrop-blur-lg border-b border-brand-gold/20 py-3 shadow-2xl' 
+        : 'bg-gradient-to-b from-black/80 to-transparent py-6'
+    }`}>
+      <div className="container mx-auto px-6 flex justify-between items-center">
+        <div className="flex items-center space-x-2">
+          <a 
+            href="https://instagram.com/biribardrinks" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="relative block group"
+          >
+            <span className="text-2xl font-cinzel font-bold tracking-widest text-white group-hover:text-brand-gold transition-colors">
+              BIRIBAR<span className="text-brand-gold"> DRINK'S</span>
+            </span>
+            <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-brand-gold to-transparent opacity-50"></div>
+          </a>
+        </div>
+
+        {/* Desktop Nav */}
+        <div className="hidden md:flex items-center space-x-8">
+          <div className="flex items-center space-x-6 mr-4">
+            {navItems.map((item) => (
+              <button
+                key={item.name}
+                onClick={() => handleNavClick(item)}
+                className="text-[10px] uppercase font-bold tracking-[0.2em] text-gray-300 hover:text-brand-gold transition-colors duration-300"
+              >
+                {item.name}
+              </button>
+            ))}
+            <Link 
+              to="/dashboard"
+              className="text-gray-400 hover:text-brand-gold transition-colors flex items-center gap-1 text-[10px] uppercase font-bold tracking-[0.2em]"
+            >
+              <Lock className="w-3 h-3" />
+              Restrito
+            </Link>
+          </div>
+          
+          <Link
+            to="/quote"
+            className="px-6 py-2.5 bg-brand-gold text-brand-richBlack text-[11px] font-bold tracking-tighter uppercase rounded-sm hover:bg-white hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-300 flex items-center group"
+          >
+            Solicitar Orçamento
+            <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+
+        {/* Mobile Toggle */}
+        <button 
+          className="md:hidden text-white hover:text-brand-gold transition-colors"
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          {isOpen ? <X className="w-8 h-8" /> : <Menu className="w-8 h-8" />}
+        </button>
+      </div>
+
+      {/* Mobile Menu */}
+      <div className={`fixed inset-0 bg-brand-richBlack z-40 transition-transform duration-500 ${isOpen ? 'translate-x-0' : 'translate-x-full'} md:hidden`}>
+        <div className="flex flex-col items-center justify-center h-full space-y-10">
+          {navItems.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => handleNavClick(item)}
+              className="text-2xl font-cinzel text-white hover:text-brand-gold transition-colors"
+            >
+              {item.name}
+            </button>
+          ))}
+          <Link to="/dashboard" onClick={() => setIsOpen(false)} className="text-brand-gold uppercase tracking-widest font-bold">Painel Admin</Link>
+          <Link
+            to="/quote"
+            onClick={() => setIsOpen(false)}
+            className="px-8 py-4 bg-brand-gold text-brand-richBlack text-lg font-bold uppercase tracking-widest rounded-sm"
+          >
+            Solicitar Orçamento
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Header;
