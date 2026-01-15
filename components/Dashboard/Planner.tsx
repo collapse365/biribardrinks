@@ -57,7 +57,7 @@ const Planner: React.FC = () => {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
           <Loader2 className="w-10 h-10 text-brand-gold animate-spin" />
-          <p className="text-gray-500 font-bold uppercase tracking-[0.3em] text-[10px]">Sincronizando com a nuvem...</p>
+          <p className="text-gray-500 font-bold uppercase tracking-[0.3em] text-[10px]">Sincronizando...</p>
         </div>
       ) : activeTab === 'leads' ? (
         <div className="space-y-6">
@@ -79,17 +79,17 @@ const Planner: React.FC = () => {
                     <div className="space-y-1">
                       <p className="text-[9px] uppercase font-bold text-gray-600 tracking-widest">Local & Data</p>
                       <p className="text-sm text-gray-300 flex items-center gap-2 font-medium"><MapPin className="w-3 h-3 text-brand-gold" /> {lead.location}</p>
-                      <p className="text-sm text-gray-300 flex items-center gap-2 font-medium"><Clock className="w-3 h-3 text-brand-gold" /> {lead.date}</p>
+                      <p className="text-sm text-gray-300 flex items-center gap-2 font-medium"><Clock className="w-3 h-3 text-brand-gold" /> {lead.event_date}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-[9px] uppercase font-bold text-gray-600 tracking-widest">Convidados</p>
                       <p className="text-sm text-white font-bold">{lead.guests} pessoas</p>
-                      <p className="text-[10px] text-brand-gold font-bold uppercase">{lead.planType.replace('-',' ')}</p>
+                      <p className="text-[10px] text-brand-gold font-bold uppercase">{(lead.plan_type || 'N/A').replace('-',' ')}</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-[9px] uppercase font-bold text-gray-600 tracking-widest">Insumos</p>
-                      <p className="text-[10px] text-gray-400 font-medium">{lead.caipiFlavors?.join(', ') || 'N/A'}</p>
-                      <p className="text-[10px] text-gray-400 font-medium">{lead.specialDrinks?.length || 0} drinks especiais</p>
+                      <p className="text-[10px] text-gray-400 font-medium">{lead.caipi_flavors?.join(', ') || 'Sem Caipis'}</p>
+                      <p className="text-[10px] text-gray-400 font-medium">{lead.special_drinks?.length || 0} drinks especiais</p>
                     </div>
                     <div className="space-y-1">
                       <p className="text-[9px] uppercase font-bold text-gray-600 tracking-widest">Estimativa</p>
@@ -103,7 +103,6 @@ const Planner: React.FC = () => {
                     <button 
                       onClick={() => handleUpdateStatus(lead.id, 'Aprovado')}
                       className="p-4 bg-green-500/10 text-green-500 rounded-xl hover:bg-green-500 hover:text-white transition-all shadow-lg"
-                      title="Aprovar Orçamento"
                     >
                       <CheckCircle className="w-5 h-5" />
                     </button>
@@ -111,7 +110,6 @@ const Planner: React.FC = () => {
                   <button 
                     onClick={() => handleDeleteLead(lead.id)}
                     className="p-4 bg-red-500/10 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-lg"
-                    title="Excluir Lead"
                   >
                     <Trash2 className="w-5 h-5" />
                   </button>
@@ -126,13 +124,14 @@ const Planner: React.FC = () => {
           {leads.length === 0 && (
             <div className="py-24 text-center text-gray-600 bg-brand-graphite rounded-3xl border-2 border-dashed border-white/5 flex flex-col items-center gap-4">
               <AlertCircle className="w-12 h-12 opacity-20" />
-              <p className="font-bold uppercase tracking-widest text-xs">Nenhum lead disponível no momento</p>
+              <p className="font-bold uppercase tracking-widest text-xs">Nenhum orçamento pendente</p>
             </div>
           )}
         </div>
       ) : (
-        <div className="py-24 text-center text-gray-600 bg-brand-graphite rounded-3xl border-2 border-dashed border-white/5">
-           <p className="font-bold uppercase tracking-widest text-xs">A funcionalidade de Agenda está sendo sincronizada.</p>
+        <div className="py-32 text-center text-gray-500 bg-brand-graphite rounded-3xl border border-white/5">
+           <p className="font-cinzel uppercase tracking-[0.3em]">Agenda de Eventos</p>
+           <p className="text-xs mt-4">Em breve você poderá visualizar sua agenda completa aqui.</p>
         </div>
       )}
     </div>

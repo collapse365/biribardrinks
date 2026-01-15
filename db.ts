@@ -1,9 +1,6 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-/**
- * CONFIGURAÇÃO OFICIAL SUPABASE - BIRIBAR DRINK'S
- */
 const SUPABASE_URL = 'https://lhxxpiktgtbeowflqzzj.supabase.co'; 
 const SUPABASE_ANON_KEY: string = 'sb_publishable_rIZn2texoXNYTd1X4Z0aWw_HykPoBCb';
 
@@ -74,11 +71,11 @@ export interface Lead {
   id: number;
   name: string;
   phone: string;
-  guests: string;
+  guests: number;
   location: string;
-  date: string;
-  time: string;
-  duration: string;
+  event_date: string;
+  event_time: string;
+  duration: number;
   plan_type: string;
   total: number;
   status: 'Pendente' | 'Aprovado' | 'Arquivado';
@@ -112,11 +109,6 @@ export const db = {
       await supabase.auth.signOut({ scope: 'global' });
       localStorage.clear();
       sessionStorage.clear();
-      document.cookie.split(";").forEach((c) => {
-        document.cookie = c
-          .replace(/^ +/, "")
-          .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
-      });
     } catch (e) {
       console.error("Erro no signOut:", e);
     }
