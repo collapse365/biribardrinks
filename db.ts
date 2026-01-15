@@ -7,13 +7,6 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = 'https://lhxxpiktgtbeowflqzzj.supabase.co'; 
 const SUPABASE_ANON_KEY: string = 'sb_publishable_rIZn2texoXNYTd1X4Z0aWw_HykPoBCb';
 
-// Verifica se a chave é válida
-const isConfigured = SUPABASE_ANON_KEY.length > 20;
-
-if (!isConfigured) {
-  console.warn('⚠️ CONFIGURAÇÃO PENDENTE: A chave do Supabase em db.ts parece inválida ou ausente.');
-}
-
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export interface PricingConfig {
@@ -107,6 +100,8 @@ export interface AppData {
   testimonials: Testimonial[];
   services: Service[];
   about: AboutContent;
+  instagramHandle?: string;
+  lastIgSync?: string;
 }
 
 export const db = {
@@ -116,14 +111,9 @@ export const db = {
 
   async signOut() {
     try {
-      // Logout global para invalidar o token no servidor
       await supabase.auth.signOut({ scope: 'global' });
-      
-      // Limpeza manual de qualquer dado remanescente
       localStorage.clear();
       sessionStorage.clear();
-      
-      // Limpar cookies específicos do Supabase (se houver)
       document.cookie.split(";").forEach((c) => {
         document.cookie = c
           .replace(/^ +/, "")
@@ -152,39 +142,22 @@ export const db = {
       const getSetting = (key: string) => settings?.find(s => s.key === key)?.value;
 
       return {
-        pricing: getSetting('pricing') || {
-          baseAlcohol: 65,
-          baseNonAlcohol: 45,
-          baseMisto: 55,
-          extraHourMultiplier: 0.15,
-          specialDrinkFee: 5,
-          premiumLabelFee: 18,
-          counterFixedFee: 100,
-          glasswareFixedFee: 2.5,
-          staffHourlyRate: 35
-        },
-        about: getSetting('about') || {
-          history: 'Nossa história...',
-          mission: 'Nossa missão...',
-          vision: 'Nossa visão...',
-          values: []
-        },
+        pricing: getSetting('pricing') || { baseAlcohol: 65, baseNonAlcohol: 45, baseMisto: 55, extraHourMultiplier: 0.15, specialDrinkFee: 5, premiumLabelFee: 18, counterFixedFee: 100, glasswareFixedFee: 2.5, staffHourlyRate: 35 },
+        about: getSetting('about') || { history: '', mission: '', vision: '', values: [] },
         gallery: getSetting('gallery') || [],
         caipiFlavors: getSetting('caipi_flavors') || [],
         frozenFlavors: getSetting('frozen_flavors') || [],
         testimonials: getSetting('testimonials') || [],
         services: getSetting('services') || [],
+        instagramHandle: getSetting('instagram_handle') || 'biribardrinks',
+        lastIgSync: getSetting('last_ig_sync') || '',
         leads: leadsRes.data || [],
         inventory: inventoryRes.data || [],
         drinks: drinksRes.data || []
       };
     } catch (err) {
       console.error('Erro ao buscar dados:', err);
-      return {
-        pricing: { baseAlcohol: 65, baseNonAlcohol: 45, baseMisto: 55, extraHourMultiplier: 0.15, specialDrinkFee: 5, premiumLabelFee: 18, counterFixedFee: 100, glasswareFixedFee: 2.5, staffHourlyRate: 35 },
-        about: { history: '', mission: '', vision: '', values: [] },
-        gallery: [], caipiFlavors: [], frozenFlavors: [], testimonials: [], services: [], leads: [], inventory: [], drinks: []
-      };
+      return { pricing: { baseAlcohol: 65, baseNonAlcohol: 45, baseMisto: 55, extraHourMultiplier: 0.15, specialDrinkFee: 5, premiumLabelFee: 18, counterFixedFee: 100, glasswareFixedFee: 2.5, staffHourlyRate: 35 }, about: { history: '', mission: '', vision: '', values: [] }, gallery: [], caipiFlavors: [], frozenFlavors: [], testimonials: [], services: [], leads: [], inventory: [], drinks: [] };
     }
   },
 
@@ -252,6 +225,13 @@ export const db = {
 
   async updateGallery(images: string[]) {
     await supabase.from('site_settings').upsert({ key: 'gallery', value: images });
+  },
+
+  async updateInstagramSettings(handle: string, lastSync?: string) {
+    await supabase.from('site_settings').upsert({ key: 'instagram_handle', value: handle });
+    if (lastSync) {
+      await supabase.from('site_settings').upsert({ key: 'last_ig_sync', value: lastSync });
+    }
   },
 
   async updateTestimonials(testimonials: Testimonial[]) {
