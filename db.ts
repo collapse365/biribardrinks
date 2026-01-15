@@ -79,14 +79,14 @@ export interface Lead {
   date: string;
   time: string;
   duration: string;
-  planType: string;
+  plan_type: string;
   total: number;
   status: 'Pendente' | 'Aprovado' | 'Arquivado';
-  caipiFlavors: string[];
-  frozenFlavors: string[];
-  specialDrinks: any[];
-  cupType: 'standard' | 'glass';
-  glassQuantity?: number;
+  caipi_flavors: string[];
+  frozen_flavors: string[];
+  special_drinks: any[];
+  cup_type: 'standard' | 'glass';
+  glass_quantity?: number;
 }
 
 export interface AppData {
@@ -100,8 +100,6 @@ export interface AppData {
   testimonials: Testimonial[];
   services: Service[];
   about: AboutContent;
-  instagramHandle?: string;
-  lastIgSync?: string;
 }
 
 export const db = {
@@ -149,8 +147,6 @@ export const db = {
         frozenFlavors: getSetting('frozen_flavors') || [],
         testimonials: getSetting('testimonials') || [],
         services: getSetting('services') || [],
-        instagramHandle: getSetting('instagram_handle') || 'biribardrinks',
-        lastIgSync: getSetting('last_ig_sync') || '',
         leads: leadsRes.data || [],
         inventory: inventoryRes.data || [],
         drinks: drinksRes.data || []
@@ -225,13 +221,6 @@ export const db = {
 
   async updateGallery(images: string[]) {
     await supabase.from('site_settings').upsert({ key: 'gallery', value: images });
-  },
-
-  async updateInstagramSettings(handle: string, lastSync?: string) {
-    await supabase.from('site_settings').upsert({ key: 'instagram_handle', value: handle });
-    if (lastSync) {
-      await supabase.from('site_settings').upsert({ key: 'last_ig_sync', value: lastSync });
-    }
   },
 
   async updateTestimonials(testimonials: Testimonial[]) {

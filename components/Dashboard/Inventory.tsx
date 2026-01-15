@@ -19,7 +19,6 @@ const Inventory: React.FC = () => {
   });
 
   useEffect(() => {
-    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
     db.get().then(data => setItems(data.inventory));
   }, []);
 
@@ -64,15 +63,15 @@ const Inventory: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 md:space-y-8 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-cinzel font-bold text-white">Tabela de Custos</h2>
-          <p className="text-gray-500 mt-1">Configure o preço e tamanho das embalagens para cálculo de dose.</p>
+          <h2 className="text-2xl md:text-3xl font-cinzel font-bold text-white">Insumos & Custos</h2>
+          <p className="text-gray-500 text-sm mt-1">Configure o preço e tamanho das embalagens.</p>
         </div>
         <button 
           onClick={() => setIsAdding(true)}
-          className="px-6 py-3 bg-brand-gold text-brand-richBlack rounded-lg font-bold flex items-center gap-2 hover:bg-white transition-all shadow-xl"
+          className="px-6 py-3 bg-brand-gold text-brand-richBlack rounded-lg font-bold flex items-center justify-center gap-2 hover:bg-white transition-all shadow-xl text-sm"
         >
           <Plus className="w-5 h-5" /> Novo Insumo
         </button>
@@ -85,89 +84,91 @@ const Inventory: React.FC = () => {
             <input type="text" value={newItem.name} onChange={e => setNewItem({...newItem, name: e.target.value})} className="w-full bg-brand-richBlack border border-white/10 rounded p-2 text-white text-sm focus:border-brand-gold outline-none" placeholder="Ex: Gin Tanqueray"/>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] uppercase font-bold text-gray-500">Unidade Base</label>
+            <label className="text-[10px] uppercase font-bold text-gray-500">Unidade</label>
             <select value={newItem.unit} onChange={e => setNewItem({...newItem, unit: e.target.value as any})} className="w-full bg-brand-richBlack border border-white/10 rounded p-2 text-white text-sm">
               {UNITS.map(u => <option key={u} value={u}>{u.toUpperCase()}</option>)}
             </select>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] uppercase font-bold text-gray-500">Tamanho da Emb. (L/Kg)</label>
+            <label className="text-[10px] uppercase font-bold text-gray-500">Tamanho Emb.</label>
             <input type="number" step="0.001" value={newItem.packageSize} onChange={e => setNewItem({...newItem, packageSize: Number(e.target.value)})} className="w-full bg-brand-richBlack border border-white/10 rounded p-2 text-white text-sm"/>
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] uppercase font-bold text-gray-500">Custo da Emb. (R$)</label>
+            <label className="text-[10px] uppercase font-bold text-gray-500">Custo (R$)</label>
             <div className="flex gap-2">
               <input type="number" value={newItem.cost} onChange={e => setNewItem({...newItem, cost: Number(e.target.value)})} className="w-full bg-brand-richBlack border border-white/10 rounded p-2 text-white text-sm"/>
-              <button onClick={handleAddItem} className="p-2 bg-brand-gold text-brand-richBlack rounded hover:bg-white transition-colors"><Save className="w-5 h-5"/></button>
-              <button onClick={() => setIsAdding(false)} className="p-2 bg-white/5 text-gray-400 rounded hover:text-white transition-colors"><X className="w-5 h-5"/></button>
+              <button onClick={handleAddItem} className="p-2 bg-brand-gold text-brand-richBlack rounded hover:bg-white"><Save className="w-5 h-5"/></button>
+              <button onClick={() => setIsAdding(false)} className="p-2 bg-white/5 text-gray-400 rounded hover:text-white"><X className="w-5 h-5"/></button>
             </div>
           </div>
         </div>
       )}
 
       <div className="bg-brand-graphite rounded-xl border border-white/5 overflow-hidden shadow-2xl">
-        <table className="w-full text-left text-sm">
-          <thead>
-            <tr className="bg-white/5 text-gray-400 font-bold uppercase tracking-widest text-[10px]">
-              <th className="px-6 py-4">Insumo</th>
-              <th className="px-6 py-4">Unidade</th>
-              <th className="px-6 py-4">Tamanho Emb.</th>
-              <th className="px-6 py-4">Preço Emb.</th>
-              <th className="px-6 py-4">Preço por L/Kg</th>
-              <th className="px-6 py-4 text-center">Ações</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-white/5">
-            {items.map((item) => (
-              <tr key={item.id} className={`transition-colors group ${editingId === item.id ? 'bg-white/[0.05]' : 'hover:bg-white/[0.02]'}`}>
-                {editingId === item.id && editForm ? (
-                  <>
-                    <td className="px-6 py-3"><input type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full bg-brand-richBlack border border-brand-gold rounded px-3 py-2 text-white text-xs"/></td>
-                    <td className="px-6 py-3">
-                      <select value={editForm.unit} onChange={e => setEditForm({...editForm, unit: e.target.value as any})} className="w-full bg-brand-richBlack border border-brand-gold rounded px-3 py-2 text-white text-xs">
-                        {UNITS.map(u => <option key={u} value={u}>{u.toUpperCase()}</option>)}
-                      </select>
-                    </td>
-                    <td className="px-6 py-3"><input type="number" step="0.001" value={editForm.packageSize} onChange={e => setEditForm({...editForm, packageSize: Number(e.target.value)})} className="w-full bg-brand-richBlack border border-brand-gold rounded px-3 py-2 text-white text-xs"/></td>
-                    <td className="px-6 py-3"><input type="number" value={editForm.cost} onChange={e => setEditForm({...editForm, cost: Number(e.target.value)})} className="w-full bg-brand-richBlack border border-brand-gold rounded px-3 py-2 text-white text-xs"/></td>
-                    <td className="px-6 py-3 text-gray-500 italic">-</td>
-                    <td className="px-6 py-3 text-center">
-                      <div className="flex justify-center gap-2">
-                        <button onClick={handleSaveEdit} className="p-2 bg-brand-gold text-brand-richBlack rounded-lg hover:bg-white"><Check className="w-4 h-4" /></button>
-                        <button onClick={cancelEditing} className="p-2 bg-white/5 text-gray-400 rounded-lg hover:text-white"><X className="w-4 h-4" /></button>
-                      </div>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded bg-brand-richBlack flex items-center justify-center text-brand-gold"><Package className="w-4 h-4" /></div>
-                        <span className="text-white font-medium">{item.name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 uppercase text-[10px] tracking-widest text-gray-400">{item.unit}</td>
-                    <td className="px-6 py-5 text-gray-300 font-mono">
-                      {item.packageSize} {item.unit === 'un' ? 'un' : item.unit}
-                    </td>
-                    <td className="px-6 py-5 text-white font-bold">R$ {item.cost.toFixed(2)}</td>
-                    <td className="px-6 py-5">
-                      <span className="text-brand-gold font-bold">
-                        R$ {(item.cost / item.packageSize).toFixed(2)}/{item.unit}
-                      </span>
-                    </td>
-                    <td className="px-6 py-5 text-center">
-                      <div className="flex justify-center gap-3">
-                        <button onClick={() => startEditing(item)} className="text-gray-500 hover:text-brand-gold"><Edit2 className="w-4 h-4" /></button>
-                        <button onClick={() => handleDeleteItem(item.id)} className="text-gray-500 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </td>
-                  </>
-                )}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm min-w-[700px]">
+            <thead>
+              <tr className="bg-white/5 text-gray-400 font-bold uppercase tracking-widest text-[10px]">
+                <th className="px-6 py-4">Insumo</th>
+                <th className="px-6 py-4">Unidade</th>
+                <th className="px-6 py-4">Tamanho Emb.</th>
+                <th className="px-6 py-4">Preço Emb.</th>
+                <th className="px-6 py-4">Preço por L/Kg</th>
+                <th className="px-6 py-4 text-center">Ações</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {items.map((item) => (
+                <tr key={item.id} className={`transition-colors group ${editingId === item.id ? 'bg-white/[0.05]' : 'hover:bg-white/[0.02]'}`}>
+                  {editingId === item.id && editForm ? (
+                    <>
+                      <td className="px-6 py-3"><input type="text" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} className="w-full bg-brand-richBlack border border-brand-gold rounded px-3 py-2 text-white text-xs outline-none"/></td>
+                      <td className="px-6 py-3">
+                        <select value={editForm.unit} onChange={e => setEditForm({...editForm, unit: e.target.value as any})} className="w-full bg-brand-richBlack border border-brand-gold rounded px-3 py-2 text-white text-xs outline-none">
+                          {UNITS.map(u => <option key={u} value={u}>{u.toUpperCase()}</option>)}
+                        </select>
+                      </td>
+                      <td className="px-6 py-3"><input type="number" step="0.001" value={editForm.packageSize} onChange={e => setEditForm({...editForm, packageSize: Number(e.target.value)})} className="w-full bg-brand-richBlack border border-brand-gold rounded px-3 py-2 text-white text-xs outline-none"/></td>
+                      <td className="px-6 py-3"><input type="number" value={editForm.cost} onChange={e => setEditForm({...editForm, cost: Number(e.target.value)})} className="w-full bg-brand-richBlack border border-brand-gold rounded px-3 py-2 text-white text-xs outline-none"/></td>
+                      <td className="px-6 py-3 text-gray-500 italic">-</td>
+                      <td className="px-6 py-3 text-center">
+                        <div className="flex justify-center gap-2">
+                          <button onClick={handleSaveEdit} className="p-2 bg-brand-gold text-brand-richBlack rounded-lg hover:bg-white"><Check className="w-4 h-4" /></button>
+                          <button onClick={cancelEditing} className="p-2 bg-white/5 text-gray-400 rounded-lg hover:text-white"><X className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded bg-brand-richBlack flex items-center justify-center text-brand-gold shrink-0"><Package className="w-4 h-4" /></div>
+                          <span className="text-white font-medium truncate max-w-[150px]">{item.name}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 uppercase text-[10px] tracking-widest text-gray-400">{item.unit}</td>
+                      <td className="px-6 py-5 text-gray-300 font-mono">
+                        {item.packageSize} {item.unit}
+                      </td>
+                      <td className="px-6 py-5 text-white font-bold whitespace-nowrap">R$ {item.cost.toFixed(2)}</td>
+                      <td className="px-6 py-5 whitespace-nowrap">
+                        <span className="text-brand-gold font-bold">
+                          R$ {(item.cost / item.packageSize).toFixed(2)}/{item.unit}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-center">
+                        <div className="flex justify-center gap-3">
+                          <button onClick={() => startEditing(item)} className="text-gray-500 hover:text-brand-gold"><Edit2 className="w-4 h-4" /></button>
+                          <button onClick={() => handleDeleteItem(item.id)} className="text-gray-500 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
