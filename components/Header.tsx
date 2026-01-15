@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Menu, X, ChevronRight, Lock } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 interface HeaderProps {
   scrolled: boolean;
@@ -9,26 +9,39 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ scrolled }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const navItems = [
-    { name: 'Início', target: 'home', isExternal: false },
-    { name: 'Serviços', target: 'services', isExternal: false },
-    { name: 'Galeria', target: 'https://instagram.com/biribardrinks', isExternal: true },
-    { name: 'Depoimentos', target: 'testimonials', isExternal: false },
+    { name: 'Início', target: 'home', isExternal: false, isRoute: true, path: '/' },
+    { name: 'Serviços', target: 'services', isExternal: false, isRoute: false },
+    { name: 'Sobre Nós', target: 'about', isExternal: false, isRoute: true, path: '/about' },
+    { name: 'Galeria', target: 'https://instagram.com/biribardrinks', isExternal: true, isRoute: false },
+    { name: 'Depoimentos', target: 'testimonials', isExternal: false, isRoute: false },
   ];
 
   const scrollToSection = (id: string) => {
     setIsOpen(false);
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) element.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const element = document.getElementById(id);
+      if (element) element.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  const handleNavClick = (item: { name: string; target: string; isExternal: boolean }) => {
+  const handleNavClick = (item: any) => {
     if (item.isExternal) {
       window.open(item.target, '_blank', 'noopener,noreferrer');
       setIsOpen(false);
+    } else if (item.isRoute && item.path) {
+      navigate(item.path);
+      setIsOpen(false);
+      window.scrollTo(0, 0);
     } else {
       scrollToSection(item.target);
     }
@@ -42,17 +55,12 @@ const Header: React.FC<HeaderProps> = ({ scrolled }) => {
     }`}>
       <div className="container mx-auto px-6 flex justify-between items-center">
         <div className="flex items-center space-x-2">
-          <a 
-            href="https://instagram.com/biribardrinks" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="relative block group"
-          >
+          <Link to="/" className="relative block group">
             <span className="text-2xl font-cinzel font-bold tracking-widest text-white group-hover:text-brand-gold transition-colors">
               BIRIBAR<span className="text-brand-gold"> DRINK'S</span>
             </span>
             <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-brand-gold to-transparent opacity-50"></div>
-          </a>
+          </Link>
         </div>
 
         {/* Desktop Nav */}

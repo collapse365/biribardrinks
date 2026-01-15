@@ -8,7 +8,8 @@ import {
   Briefcase,
   Image as ImageIcon,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  Info
 } from 'lucide-react';
 import { Routes, Route, NavLink, Link, useNavigate, Navigate } from 'react-router-dom';
 import Overview from './Overview';
@@ -19,6 +20,7 @@ import Settings from './Settings';
 import GalleryManager from './GalleryManager';
 import TestimonialsManager from './TestimonialsManager';
 import ServicesManager from './ServicesManager';
+import AboutManager from './AboutManager';
 
 const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
@@ -28,6 +30,7 @@ const DashboardLayout: React.FC = () => {
     { path: '/dashboard/menu', icon: Wine, label: 'Cardápio & Receitas' },
     { path: '/dashboard/inventory', icon: Package, label: 'Custos de Insumos' },
     { path: '/dashboard/services', icon: Sparkles, label: 'Serviços' },
+    { path: '/dashboard/about', icon: Info, label: 'Institucional' },
     { path: '/dashboard/gallery', icon: ImageIcon, label: 'Galeria' },
     { path: '/dashboard/testimonials', icon: MessageSquare, label: 'Depoimentos' },
     { path: '/dashboard/settings', icon: SettingsIcon, label: 'Precificação' },
@@ -77,7 +80,7 @@ const DashboardLayout: React.FC = () => {
 
       {/* Main Area */}
       <div className="flex-grow flex flex-col overflow-hidden">
-        {/* Top Header - Justified to End (Right) */}
+        {/* Top Header */}
         <header className="h-24 bg-brand-graphite border-b border-white/5 flex items-center justify-end px-12 shrink-0">
           <div className="flex items-center gap-8">
             <div className="flex items-center gap-4">
@@ -103,10 +106,9 @@ const DashboardLayout: React.FC = () => {
               <Route path="gallery" element={<GalleryManager />} />
               <Route path="testimonials" element={<TestimonialsManager />} />
               <Route path="services" element={<ServicesManager />} />
+              <Route path="about" element={<AboutManager />} />
               <Route path="settings" element={<Settings />} />
-              {/* Fallback routes */}
-              <Route path="financial" element={<Planner />} />
-              <Route path="planner" element={<Planner />} />
+              <Route path="*" element={<Planner />} />
             </Routes>
           </div>
         </main>

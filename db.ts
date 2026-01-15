@@ -11,7 +11,7 @@ export interface PricingConfig {
   specialDrinkFee: number;
   premiumLabelFee: number;
   counterFixedFee: number;
-  glasswareFixedFee: number; // Agora tratado como preço unitário da taça
+  glasswareFixedFee: number;
   staffHourlyRate: number;
 }
 
@@ -20,13 +20,13 @@ export interface InventoryItem {
   name: string;
   category: string;
   unit: 'un' | 'kg' | 'l';
-  packageSize: number; // Volume ou peso da unidade (ex: 0.75 para 750ml)
-  cost: number; // Preço da embalagem fechada
+  packageSize: number;
+  cost: number;
 }
 
 export interface DrinkIngredient {
   inventoryItemId: string;
-  amount: number; // Quantidade usada na receita (em L ou Kg)
+  amount: number;
 }
 
 export type DrinkCategory = 'Drink Especial' | 'Caipi Frutas' | 'Frozen';
@@ -55,6 +55,13 @@ export interface Service {
   title: string;
   description: string;
   image: string;
+}
+
+export interface AboutContent {
+  history: string;
+  mission: string;
+  vision: string;
+  values: string[];
 }
 
 export interface Lead {
@@ -86,6 +93,7 @@ export interface AppData {
   gallery: string[];
   testimonials: Testimonial[];
   services: Service[];
+  about: AboutContent;
 }
 
 const initialData: AppData = {
@@ -97,11 +105,10 @@ const initialData: AppData = {
     specialDrinkFee: 5,
     premiumLabelFee: 18,
     counterFixedFee: 100,
-    glasswareFixedFee: 2.50, // Preço por taça alugada
+    glasswareFixedFee: 2.50,
     staffHourlyRate: 35
   },
   inventory: [
-    // Destilados com volumes variados
     { id: 'v-absolut', name: 'Vodca Absolut', category: 'Destilado', unit: 'l', packageSize: 1, cost: 130 },
     { id: 'v-skyy', name: 'Vodka Skyy', category: 'Destilado', unit: 'l', packageSize: 1, cost: 70 },
     { id: 'v-roskoff', name: 'Vodca Roskoff', category: 'Destilado', unit: 'l', packageSize: 1, cost: 14.50 },
@@ -111,8 +118,6 @@ const initialData: AppData = {
     { id: 'c-sagatiba', name: 'Cachaça Sagatiba', category: 'Destilado', unit: 'l', packageSize: 0.75, cost: 65 },
     { id: 'c-tatuzinho', name: 'Cachaça Tatuzinho', category: 'Destilado', unit: 'l', packageSize: 0.6, cost: 9 },
     { id: 'r-bacardi', name: 'Rum Bacardi Prata', category: 'Destilado', unit: 'l', packageSize: 1, cost: 70 },
-    
-    // Insumos
     { id: 'f-limao', name: 'Limão', category: 'Insumo', unit: 'kg', packageSize: 1, cost: 7 },
     { id: 'f-morango', name: 'Morango', category: 'Insumo', unit: 'kg', packageSize: 0.225, cost: 22 },
     { id: 'f-abacaxi', name: 'Abacaxi', category: 'Insumo', unit: 'un', packageSize: 1, cost: 10 },
@@ -127,8 +132,8 @@ const initialData: AppData = {
       canBeNonAlcoholic: true,
       image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&q=80&w=400',
       ingredients: [
-        { inventoryItemId: 'v-skyy', amount: 0.05 }, // 50ml
-        { inventoryItemId: 'f-limao', amount: 0.02 }, // 20g
+        { inventoryItemId: 'v-skyy', amount: 0.05 },
+        { inventoryItemId: 'f-limao', amount: 0.02 },
         { inventoryItemId: 'i-acucar', amount: 0.015 }
       ]
     },
@@ -140,7 +145,7 @@ const initialData: AppData = {
       canBeNonAlcoholic: false,
       image: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?auto=format&fit=crop&q=80&w=400',
       ingredients: [
-        { inventoryItemId: 'g-rocks', amount: 0.06 }, // 60ml
+        { inventoryItemId: 'g-rocks', amount: 0.06 },
         { inventoryItemId: 'f-limao', amount: 0.02 }
       ]
     }
@@ -208,7 +213,13 @@ const initialData: AppData = {
       description: "Drinks sofisticados sem álcool, cafés gourmets e chás gelados artesanais para garantir inclusividade e frescor.",
       image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=800"
     }
-  ]
+  ],
+  about: {
+    history: "Nascida em Breves, no coração do Marajó, a BiriBar Drink's surgiu da paixão por transformar momentos comuns em celebrações extraordinárias. O que começou como um projeto familiar focado em caipirinhas artesanais, rapidamente evoluiu para uma referência regional em mixologia premium. Com anos de estrada, consolidamos nossa identidade através do equilíbrio perfeito entre hospitalidade amazônica e técnicas internacionais de coquetelaria.",
+    mission: "Proporcionar experiências sensoriais inesquecíveis através da arte da mixologia, unindo sofisticação, ingredientes de alta qualidade e um serviço de bar impecável que eleva o padrão de cada evento.",
+    vision: "Ser reconhecida como a principal autoridade em serviços de Open Bar premium no Norte do país, expandindo nossas fronteiras através da inovação constante e excelência operacional.",
+    values: ["Qualidade Premium", "Inovação Constante", "Sofisticação Visual", "Ética Profissional", "Satisfação do Cliente"]
+  }
 };
 
 export const db = {
@@ -300,6 +311,12 @@ export const db = {
   updateServices(services: Service[]) {
     const data = this.get();
     data.services = services;
+    this.save(data);
+  },
+
+  updateAbout(about: AboutContent) {
+    const data = this.get();
+    data.about = about;
     this.save(data);
   }
 };

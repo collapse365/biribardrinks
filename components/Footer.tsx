@@ -1,12 +1,21 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 const Footer: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    if (location.pathname !== '/') {
+      navigate('/');
+      setTimeout(() => {
+        const element = document.getElementById(id);
+        if (element) element.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } else {
+      const element = document.getElementById(id);
+      if (element) element.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -15,16 +24,11 @@ const Footer: React.FC = () => {
       <div className="container mx-auto px-6">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           <div className="col-span-1 md:col-span-2">
-            <a 
-              href="https://instagram.com/biribardrinks" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="inline-block group"
-            >
+            <Link to="/" className="inline-block group">
               <h2 className="text-3xl font-cinzel font-bold text-white mb-6 group-hover:text-brand-gold transition-colors">
                 BIRIBAR<span className="text-brand-gold"> DRINK'S</span>
               </h2>
-            </a>
+            </Link>
             <p className="text-gray-400 max-w-sm leading-relaxed mb-8">
               A marca líder em open bar de luxo, transformando eventos sociais e corporativos 
               em experiências sensoriais memoráveis. Elevamos o conceito de serviço de bar 
@@ -47,8 +51,8 @@ const Footer: React.FC = () => {
             <ul className="space-y-4 text-gray-400 text-sm">
               <li><button onClick={() => scrollToSection('home')} className="hover:text-brand-gold transition-colors text-left w-full">Início</button></li>
               <li><button onClick={() => scrollToSection('services')} className="hover:text-brand-gold transition-colors text-left w-full">Nossos Serviços</button></li>
+              <li><Link to="/about" className="hover:text-brand-gold transition-colors text-left w-full block">Sobre Nós</Link></li>
               <li><button onClick={() => scrollToSection('gallery')} className="hover:text-brand-gold transition-colors text-left w-full">Portfólio</button></li>
-              <li><button onClick={() => scrollToSection('testimonials')} className="hover:text-brand-gold transition-colors text-left w-full">O que dizem os clientes</button></li>
               <li><Link to="/quote" className="hover:text-brand-gold transition-colors text-left w-full block text-brand-gold font-bold">Pedir Orçamento</Link></li>
             </ul>
           </div>

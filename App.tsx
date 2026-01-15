@@ -10,6 +10,7 @@ import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import DashboardLayout from './components/Dashboard/DashboardLayout';
 import QuotePage from './pages/QuotePage';
+import AboutPage from './pages/AboutPage';
 
 const LandingPage: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -55,6 +56,7 @@ const App: React.FC = () => {
     <HashRouter>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+        <Route path="/about" element={<AboutPage />} />
         <Route path="/quote" element={<QuotePage />} />
         <Route path="/dashboard/*" element={<DashboardLayout />} />
         <Route path="*" element={<Navigate to="/" replace />} />
