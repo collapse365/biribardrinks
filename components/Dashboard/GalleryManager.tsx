@@ -1,8 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Image as ImageIcon, Upload, X, Check, Save, Instagram, RefreshCw, Loader2, Search } from 'lucide-react';
+import { Plus, Trash2, Image as ImageIcon, Upload, X, Check, Save, Instagram, RefreshCw, Loader2, Search, ExternalLink } from 'lucide-react';
 import { db } from '../../db';
 import { GoogleGenAI } from "@google/genai";
+
+// Declaração para TypeScript reconhecer a API do AI Studio
+// Fix: Use AIStudio interface and readonly modifier to match expected global environment definitions and avoid "identical modifiers" errors.
+interface AIStudio {
+  hasSelectedApiKey(): Promise<boolean>;
+  openSelectKey(): Promise<void>;
+}
+
+declare global {
+  interface Window {
+    readonly aistudio: AIStudio;
+  }
+}
 
 const GalleryManager: React.FC = () => {
   const [images, setImages] = useState<string[]>([]);
@@ -25,18 +38,32 @@ const GalleryManager: React.FC = () => {
     setIsSyncing(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      // 1. Verificar se estamos no ambiente AI Studio e se há uma chave selecionada
+      if (typeof window.aistudio !== 'undefined') {
+        const hasKey = await window.aistudio.hasSelectedApiKey();
+        if (!hasKey) {
+          alert("Para usar a sincronização inteligente com Google Search, você precisa selecionar uma API Key de um projeto faturável.");
+          await window.aistudio.openSelectKey();
+          // Conforme diretriz, assumimos sucesso após o diálogo abrir e prosseguimos
+        }
+      }
+
+      // 2. Obter a chave do ambiente (injetada após a seleção)
+      const apiKey = process.env.API_KEY;
+      if (!apiKey) {
+        throw new Error("API Key não encontrada. Certifique-se de selecionar uma chave válida.");
+      }
+
+      // 3. Criar nova instância da API (sempre no momento do uso)
+      const ai = new GoogleGenAI({ apiKey });
       
-      // Utilizamos o gemini-3-pro-preview por ser mais robusto com ferramentas de busca
+      // Conforme diretriz: Upgrade para 'gemini-3-pro-image-preview' quando usar googleSearch para informações em tempo real
+      // Use direct string for prompt content as recommended.
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-preview",
-        contents: [{
-          parts: [{
-            text: `Encontre e liste as URLs diretas de imagens do perfil do Instagram https://www.instagram.com/${igHandle}. 
-                   Foque exclusivamente em fotos de drinks, coquetéis, balcões de bar e eventos realizados. 
-                   As URLs devem ser links estáticos (como os de CDN fbcdn.net ou instagram.com).`
-          }]
-        }],
+        model: "gemini-3-pro-image-preview",
+        contents: `Acesse o perfil do Instagram https://www.instagram.com/${igHandle}. 
+                   Localize e extraia as URLs diretas de imagens (links estáticos de CDN como fbcdn.net) das postagens recentes de coquetéis e bar. 
+                   Liste as URLs encontradas separadas por vírgulas. Não forneça explicações, apenas as URLs.`,
         config: {
           tools: [{ googleSearch: {} }]
         },
@@ -44,23 +71,22 @@ const GalleryManager: React.FC = () => {
 
       let foundUrls: string[] = [];
       
-      // 1. Extração segura do texto da resposta
+      // Extração do texto - Using response.text getter directly.
       try {
         const responseText = response.text || "";
         const urlRegex = /(https?:\/\/[^\s,]+?\.(?:jpg|jpeg|png|webp|avif))/gi;
         const matches = responseText.match(urlRegex);
         if (matches) foundUrls.push(...matches);
       } catch (e) {
-        console.warn("Aviso: Resposta de texto não disponível ou bloqueada.");
+        console.warn("Texto da resposta indisponível.");
       }
 
-      // 2. Extração segura dos metadados de busca (Grounding)
+      // Extração dos Grounding Chunks (Busca do Google)
       const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
       if (groundingMetadata?.groundingChunks) {
         groundingMetadata.groundingChunks.forEach((chunk: any) => {
           if (chunk.web?.uri) {
             const uri = chunk.web.uri;
-            // Verifica se o link parece ser de uma imagem ou de um CDN do Instagram/FB
             if (uri.includes('fbcdn.net') || uri.includes('cdninstagram') || uri.match(/\.(jpg|jpeg|png|webp)/i)) {
               foundUrls.push(uri);
             }
@@ -68,7 +94,6 @@ const GalleryManager: React.FC = () => {
         });
       }
 
-      // 3. Filtragem e limpeza das URLs
       const validImages = [...new Set(foundUrls)].filter(url => 
         url.startsWith('http') && 
         (url.includes('cdn') || url.includes('instagram') || url.includes('fbcdn') || url.match(/\.(jpg|jpeg|png|webp)/i))
@@ -77,27 +102,28 @@ const GalleryManager: React.FC = () => {
       if (validImages.length > 0) {
         const updatedGallery = [...new Set([...validImages, ...images])].slice(0, 40);
         setImages(updatedGallery);
-        
         const now = new Date().toLocaleString('pt-BR');
         setLastSync(now);
-        
         await db.updateGallery(updatedGallery);
         await db.updateInstagramSettings(igHandle, now);
-        
-        alert(`Sucesso! Encontramos ${validImages.length} novas referências visuais.`);
+        alert(`Sincronização realizada! ${validImages.length} novas fotos encontradas.`);
       } else {
-        alert('O perfil foi localizado, mas não conseguimos extrair URLs de imagens diretas neste momento. Tente novamente em alguns minutos ou adicione manualmente.');
+        alert('O perfil foi analisado, mas nenhuma URL direta de imagem foi extraída. Tente novamente mais tarde.');
       }
+
     } catch (error: any) {
       console.error('Erro detalhado Gemini Sync:', error);
-      const errorMessage = error.message || "";
-      
-      if (errorMessage.includes("API key")) {
-        alert('Erro de autenticação: Verifique se sua chave de API está correta e possui créditos.');
-      } else if (errorMessage.includes("safety") || errorMessage.includes("blocked")) {
-        alert('A busca foi interrompida por filtros de segurança da IA. Tente sincronizar novamente.');
+      const errorMsg = error.message || "";
+
+      // Caso o erro indique que a chave selecionada não é válida (Requested entity was not found)
+      if (errorMsg.includes("Requested entity was not found") && typeof window.aistudio !== 'undefined') {
+        alert("A chave selecionada não foi encontrada ou não possui permissão. Por favor, selecione uma chave de um projeto com faturamento ativo.");
+        await window.aistudio.openSelectKey();
+      } else if (errorMsg.includes("API Key must be set")) {
+        alert("Erro: A chave API não foi detectada. Se estiver no AI Studio, use o botão de seleção de chave.");
+        if (typeof window.aistudio !== 'undefined') await window.aistudio.openSelectKey();
       } else {
-        alert('Ocorreu uma falha na conexão com a IA. Por favor, tente novamente em alguns instantes.');
+        alert(`Falha na sincronização: ${errorMsg || 'Erro de conexão com o servidor de IA'}.`);
       }
     } finally {
       setIsSyncing(false);
@@ -140,7 +166,7 @@ const GalleryManager: React.FC = () => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-cinzel font-bold text-white uppercase tracking-wider">Curadoria Visual</h2>
-          <p className="text-gray-500 mt-1">Gestão de portfólio via Inteligência Artificial e Instagram.</p>
+          <p className="text-gray-500 mt-1">Gestão inteligente de portfólio sincronizada com seu Instagram.</p>
         </div>
         <div className="flex gap-4">
           <button 
@@ -155,7 +181,7 @@ const GalleryManager: React.FC = () => {
             className="px-6 py-3 bg-brand-gold text-brand-richBlack rounded-xl font-bold flex items-center gap-2 hover:bg-white transition-all shadow-xl disabled:opacity-50"
           >
             {isSyncing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Instagram className="w-5 h-5" />}
-            {isSyncing ? 'Conectando...' : 'Sync Instagram'}
+            {isSyncing ? 'Conectando IA...' : 'Sync Instagram'}
           </button>
         </div>
       </div>
@@ -166,13 +192,16 @@ const GalleryManager: React.FC = () => {
             <Instagram className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Algoritmo Ativo</p>
+            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Feed Integrado</p>
             <p className="text-white font-bold">@ {igHandle}</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Última Sincronização</p>
-          <p className="text-brand-gold font-medium text-sm">{lastSync || 'Pendente'}</p>
+          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Último Check-in</p>
+          <p className="text-brand-gold font-medium text-sm">{lastSync || 'Sincronize para começar'}</p>
+          <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" className="text-[9px] text-gray-600 hover:text-brand-gold flex items-center justify-end gap-1 mt-1 underline">
+             Info sobre Faturamento <ExternalLink className="w-2 h-2" />
+          </a>
         </div>
       </div>
 
@@ -180,15 +209,15 @@ const GalleryManager: React.FC = () => {
         <div className="bg-brand-graphite p-8 rounded-2xl border border-brand-gold/30 space-y-6 animate-fade-in shadow-2xl">
           <div className="flex justify-between items-center border-b border-white/5 pb-4">
             <h3 className="text-lg font-bold text-white uppercase tracking-widest">Adição Manual</h3>
-            <button onClick={() => setIsAdding(false)} className="text-gray-500 hover:text-white uppercase text-[10px] font-bold">Cancelar</button>
+            <button onClick={() => setIsAdding(false)} className="text-gray-500 hover:text-white uppercase text-[10px] font-bold">Fechar</button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
-              <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">URL da Imagem</label>
+              <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">URL Direta (JPG/PNG)</label>
               <div className="flex gap-2">
                 <input 
                   type="text" 
-                  placeholder="Link da foto..."
+                  placeholder="https://..."
                   value={newImageUrl}
                   onChange={(e) => setNewImageUrl(e.target.value)}
                   className="flex-grow bg-brand-richBlack border border-white/10 rounded-xl p-4 text-white outline-none focus:border-brand-gold"
@@ -197,10 +226,10 @@ const GalleryManager: React.FC = () => {
               </div>
             </div>
             <div className="space-y-4">
-              <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Upload Local</label>
+              <label className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Carregar do Arquivo</label>
               <label className="w-full flex items-center justify-center gap-3 p-4 border-2 border-dashed border-white/10 rounded-xl hover:border-brand-gold/50 cursor-pointer transition-all">
                 <Upload className="w-5 h-5 text-gray-500" />
-                <span className="text-sm text-gray-500">Selecionar do Dispositivo</span>
+                <span className="text-sm text-gray-500">Procurar Imagem</span>
                 <input type="file" className="hidden" accept="image/*" onChange={handleFileUpload} />
               </label>
             </div>
@@ -227,12 +256,6 @@ const GalleryManager: React.FC = () => {
             )}
           </div>
         ))}
-        {images.length === 0 && !isSyncing && (
-           <div className="col-span-full py-20 text-center border-2 border-dashed border-white/5 rounded-3xl">
-            <ImageIcon className="w-12 h-12 text-gray-800 mx-auto mb-4" />
-            <p className="text-gray-600 uppercase tracking-widest text-[10px] font-bold">Galeria Vazia. Use o Sync para começar.</p>
-          </div>
-        )}
       </div>
     </div>
   );
