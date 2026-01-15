@@ -8,7 +8,8 @@ const TestimonialsManager: React.FC = () => {
   const [editingTestimonial, setEditingTestimonial] = useState<Testimonial | null>(null);
 
   useEffect(() => {
-    setTestimonials(db.get().testimonials || []);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => setTestimonials(data.testimonials || []));
   }, []);
 
   const handleSave = () => {

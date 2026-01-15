@@ -9,7 +9,8 @@ const AboutManager: React.FC = () => {
   const [newValue, setNewValue] = useState('');
 
   useEffect(() => {
-    setContent(db.get().about);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => setContent(data.about));
   }, []);
 
   const handleSave = () => {

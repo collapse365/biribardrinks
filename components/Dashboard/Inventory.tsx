@@ -19,7 +19,8 @@ const Inventory: React.FC = () => {
   });
 
   useEffect(() => {
-    setItems(db.get().inventory);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => setItems(data.inventory));
   }, []);
 
   const startEditing = (item: InventoryItem) => {

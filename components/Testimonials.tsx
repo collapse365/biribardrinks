@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
-import { Quote, CheckCircle2 } from 'lucide-react';
+import { Quote } from 'lucide-react';
 import { db, Testimonial } from '../db';
 
 const Testimonials: React.FC = () => {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
 
   useEffect(() => {
-    setTestimonials(db.get().testimonials || []);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => setTestimonials(data.testimonials || []));
   }, []);
 
   return (
@@ -39,10 +40,6 @@ const Testimonials: React.FC = () => {
             <p className="text-gray-300 italic leading-relaxed mb-6 flex-grow">
               "{t.content}"
             </p>
-            <div className="flex items-center text-green-500 text-xs font-semibold gap-1">
-              <CheckCircle2 className="w-4 h-4" />
-              Contratação Verificada
-            </div>
           </div>
         ))}
         {testimonials.length === 0 && (

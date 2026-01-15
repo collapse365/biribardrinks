@@ -11,7 +11,8 @@ const AboutPage: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    setContent(db.get().about);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => setContent(data.about));
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);

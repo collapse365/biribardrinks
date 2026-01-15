@@ -17,7 +17,8 @@ const Services: React.FC = () => {
   const [services, setServices] = useState<Service[]>([]);
 
   useEffect(() => {
-    setServices(db.get().services || []);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => setServices(data.services || []));
   }, []);
 
   return (

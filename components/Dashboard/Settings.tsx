@@ -8,8 +8,8 @@ const Settings: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const data = db.get();
-    setPricing(data.pricing);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => setPricing(data.pricing));
   }, []);
 
   const handleSaveAll = () => {
@@ -27,7 +27,7 @@ const Settings: React.FC = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-cinzel font-bold text-white">Taxas & Precificação</h2>
-          <p className="text-gray-500 mt-1">Configure as bases matemáticas para geração automática de orçamentos.</p>
+          <p className="text-gray-500 mt-1">Configure as bases matemáticas para generation automática de orçamentos.</p>
         </div>
         <button 
           onClick={handleSaveAll}

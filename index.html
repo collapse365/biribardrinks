@@ -24,6 +24,25 @@
             fontFamily: {
               cinzel: ['Cinzel', 'serif'],
               montserrat: ['Montserrat', 'sans-serif'],
+            },
+            animation: {
+              'ken-burns': 'kenburns 20s ease-in-out infinite alternate',
+              'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+              'glow': 'glow 2s ease-in-out infinite alternate',
+            },
+            keyframes: {
+              kenburns: {
+                '0%': { transform: 'scale(1)' },
+                '100%': { transform: 'scale(1.15)' },
+              },
+              fadeInUp: {
+                '0%': { opacity: '0', transform: 'translateY(30px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              glow: {
+                '0%': { 'text-shadow': '0 0 5px rgba(250, 204, 21, 0.2)' },
+                '100%': { 'text-shadow': '0 0 20px rgba(250, 204, 21, 0.6)' },
+              }
             }
           }
         }
@@ -35,21 +54,36 @@
         color: #F3F4F6;
         font-family: 'Montserrat', sans-serif;
         scroll-behavior: smooth;
+        overflow-x: hidden;
       }
       .glass-card {
         background: rgba(26, 26, 26, 0.6);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(250, 204, 21, 0.1);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(250, 204, 21, 0.08);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
-      .text-glow {
-        text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+      .glass-card:hover {
+        border-color: rgba(250, 204, 21, 0.4);
+        box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5);
       }
-      /* Custom Scrollbar */
+      .cinzel-premium {
+        font-family: 'Cinzel', serif;
+        letter-spacing: 0.15em;
+      }
+      .reveal {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: all 1s ease-out;
+      }
+      .reveal.active {
+        opacity: 1;
+        transform: translateY(0);
+      }
       .custom-scrollbar::-webkit-scrollbar {
-        width: 4px;
+        width: 6px;
       }
       .custom-scrollbar::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.05);
+        background: #0A0A0A;
       }
       .custom-scrollbar::-webkit-scrollbar-thumb {
         background: #FACC15;
@@ -59,13 +93,14 @@
   <script type="importmap">
 {
   "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
     "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0",
     "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "vite": "https://esm.sh/vite@^7.3.1"
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1"
   }
 }
 </script>
@@ -73,5 +108,20 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
+    <script>
+      // Reveal on scroll logic
+      const reveal = () => {
+        const reveals = document.querySelectorAll(".reveal");
+        reveals.forEach(el => {
+          const windowHeight = window.innerHeight;
+          const elementTop = el.getBoundingClientRect().top;
+          const elementVisible = 150;
+          if (elementTop < windowHeight - elementVisible) {
+            el.classList.add("active");
+          }
+        });
+      };
+      window.addEventListener("scroll", reveal);
+    </script>
   </body>
 </html>

@@ -1,7 +1,21 @@
 
-// Serviço de Banco de Dados Local (LocalStorage Wrapper)
+import { createClient } from '@supabase/supabase-js';
 
-const DB_KEY = 'biribar_db_v1';
+/**
+ * CONFIGURAÇÃO OFICIAL SUPABASE - BIRIBAR DRINK'S
+ */
+const SUPABASE_URL = 'https://lhxxpiktgtbeowflqzzj.supabase.co'; 
+// A chave abaixo foi extraída da sua última mensagem e validada como formato correto para Supabase.
+const SUPABASE_ANON_KEY: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxoeHhwaWt0Z3RiZW93ZmxxenpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0OTgxMDAsImV4cCI6MjA4NDA3NDEwMH0.Lh6F8lA_-2B6rXByVkW8-ArbdPR5rMkuRyGJJ_qhbwY';
+
+// Lógica de verificação robusta: se a chave começar com 'eyJ' e for longa, está configurada.
+const isConfigured = SUPABASE_ANON_KEY.startsWith('eyJ') && SUPABASE_ANON_KEY.length > 50;
+
+if (!isConfigured) {
+  console.warn('⚠️ CONFIGURAÇÃO PENDENTE: A chave do Supabase em db.ts parece inválida ou ausente.');
+}
+
+export const supabase = createClient(SUPABASE_URL, isConfigured ? SUPABASE_ANON_KEY : 'invalid-key-placeholder');
 
 export interface PricingConfig {
   baseAlcohol: number;
@@ -96,227 +110,147 @@ export interface AppData {
   about: AboutContent;
 }
 
-const initialData: AppData = {
-  pricing: {
-    baseAlcohol: 65,
-    baseNonAlcohol: 45,
-    baseMisto: 55,
-    extraHourMultiplier: 0.15,
-    specialDrinkFee: 5,
-    premiumLabelFee: 18,
-    counterFixedFee: 100,
-    glasswareFixedFee: 2.50,
-    staffHourlyRate: 35
-  },
-  inventory: [
-    { id: 'v-absolut', name: 'Vodca Absolut', category: 'Destilado', unit: 'l', packageSize: 1, cost: 130 },
-    { id: 'v-skyy', name: 'Vodka Skyy', category: 'Destilado', unit: 'l', packageSize: 1, cost: 70 },
-    { id: 'v-roskoff', name: 'Vodca Roskoff', category: 'Destilado', unit: 'l', packageSize: 1, cost: 14.50 },
-    { id: 'g-tanqueray', name: 'Gin Tanqueray', category: 'Destilado', unit: 'l', packageSize: 0.75, cost: 130 },
-    { id: 'g-beefeater', name: 'Gin Beefeater', category: 'Destilado', unit: 'l', packageSize: 0.75, cost: 110 },
-    { id: 'g-rocks', name: "Gin Rock's", category: 'Destilado', unit: 'l', packageSize: 1, cost: 40 },
-    { id: 'c-sagatiba', name: 'Cachaça Sagatiba', category: 'Destilado', unit: 'l', packageSize: 0.75, cost: 65 },
-    { id: 'c-tatuzinho', name: 'Cachaça Tatuzinho', category: 'Destilado', unit: 'l', packageSize: 0.6, cost: 9 },
-    { id: 'r-bacardi', name: 'Rum Bacardi Prata', category: 'Destilado', unit: 'l', packageSize: 1, cost: 70 },
-    { id: 'f-limao', name: 'Limão', category: 'Insumo', unit: 'kg', packageSize: 1, cost: 7 },
-    { id: 'f-morango', name: 'Morango', category: 'Insumo', unit: 'kg', packageSize: 0.225, cost: 22 },
-    { id: 'f-abacaxi', name: 'Abacaxi', category: 'Insumo', unit: 'un', packageSize: 1, cost: 10 },
-    { id: 'i-acucar', name: 'Açúcar', category: 'Insumo', unit: 'kg', packageSize: 1, cost: 5 },
-  ],
-  drinks: [
-    { 
-      id: 'd-moscow', 
-      name: 'Moscow Mule', 
-      category: 'Drink Especial', 
-      isSpecial: true,
-      canBeNonAlcoholic: true,
-      image: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&q=80&w=400',
-      ingredients: [
-        { inventoryItemId: 'v-skyy', amount: 0.05 },
-        { inventoryItemId: 'f-limao', amount: 0.02 },
-        { inventoryItemId: 'i-acucar', amount: 0.015 }
-      ]
-    },
-    { 
-      id: 'd-gin-tonica', 
-      name: 'Gin e Tônica', 
-      category: 'Drink Especial', 
-      isSpecial: true,
-      canBeNonAlcoholic: false,
-      image: 'https://images.unsplash.com/photo-1527661591475-527312dd65f5?auto=format&fit=crop&q=80&w=400',
-      ingredients: [
-        { inventoryItemId: 'g-rocks', amount: 0.06 },
-        { inventoryItemId: 'f-limao', amount: 0.02 }
-      ]
-    }
-  ],
-  leads: [],
-  caipiFlavors: ['Limão', 'Morango', 'Abacaxi', 'Pitaya', 'Maracujá', 'Kiwi', 'Tangerina', 'Uva Black'],
-  frozenFlavors: ['Morango', 'Abacaxi', 'Maracujá', 'Menta', 'Chiclete'],
-  gallery: [
-    "https://images.unsplash.com/photo-1516997121675-4c2d1684aa3e?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1536935338788-846bb9981813?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1527661591475-527312dd65f5?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&q=80&w=800",
-    "https://images.unsplash.com/photo-1510626176961-4b57d4fbad03?auto=format&fit=crop&q=80&w=800",
-  ],
-  testimonials: [
-    {
-      id: 't-1',
-      name: "Juliana Mendes",
-      role: "Noiva",
-      content: "O BiriBar superou todas as expectativas. O atendimento foi impecável e os drinks foram o comentário principal da festa. Equipe extremamente elegante!",
-      image: "https://picsum.photos/seed/juli/100/100"
-    },
-    {
-      id: 't-2',
-      name: "Ricardo Santos",
-      role: "Diretor de Eventos (TechCorp)",
-      content: "Contratamos para o lançamento de um produto e o profissionalismo foi exemplar. Agilidade e coquetéis de altíssimo nível. Recomendo fortemente.",
-      image: "https://picsum.photos/seed/rick/100/100"
-    },
-    {
-      id: 't-3',
-      name: "Beatriz Oliveira",
-      role: "Aniversariante (15 anos)",
-      content: "Minha festa de 15 anos foi mágica! O bar sem álcool era tão incrível quanto o tradicional. Todos os meus amigos amaram as apresentações dos bartenders.",
-      image: "https://picsum.photos/seed/bea/100/100"
-    }
-  ],
-  services: [
-    {
-      id: 's-1',
-      iconName: 'Martini',
-      title: "Cocktails Clássicos & Autorais",
-      description: "Uma seleção rigorosa de ingredientes premium para criar drinks que são verdadeiras obras de arte visuais e sensoriais.",
-      image: "https://images.unsplash.com/photo-1536935338788-846bb9981813?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      id: 's-2',
-      iconName: 'PartyPopper',
-      title: "Casamentos & Debutantes",
-      description: "Serviço personalizado para momentos únicos. Estrutura elegante que se integra perfeitamente à decoração da sua festa.",
-      image: "https://images.unsplash.com/photo-1470337458703-46ad1756a187?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      id: 's-3',
-      iconName: 'Users',
-      title: "Eventos Corporativos",
-      description: "Profissionalismo e agilidade para lançamentos, confraternizações e congressos. O impacto positivo que sua marca merece.",
-      image: "https://images.unsplash.com/photo-1541532713592-79a0317b6b77?auto=format&fit=crop&q=80&w=800"
-    },
-    {
-      id: 's-4',
-      iconName: 'Coffee',
-      title: "Coffee & Non-Alcoholic Bar",
-      description: "Drinks sofisticados sem álcool, cafés gourmets e chás gelados artesanais para garantir inclusividade e frescor.",
-      image: "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&q=80&w=800"
-    }
-  ],
-  about: {
-    history: "Nascida em Breves, no coração do Marajó, a BiriBar Drink's surgiu da paixão por transformar momentos comuns em celebrações extraordinárias. O que começou como um projeto familiar focado em caipirinhas artesanais, rapidamente evoluiu para uma referência regional em mixologia premium. Com anos de estrada, consolidamos nossa identidade através do equilíbrio perfeito entre hospitalidade amazônica e técnicas internacionais de coquetelaria.",
-    mission: "Proporcionar experiências sensoriais inesquecíveis através da arte da mixologia, unindo sofisticação, ingredientes de alta qualidade e um serviço de bar impecável que eleva o padrão de cada evento.",
-    vision: "Ser reconhecida como a principal autoridade em serviços de Open Bar premium no Norte do país, expandindo nossas fronteiras através da inovação constante e excelência operacional.",
-    values: ["Qualidade Premium", "Inovação Constante", "Sofisticação Visual", "Ética Profissional", "Satisfação do Cliente"]
-  }
-};
-
 export const db = {
-  get(): AppData {
-    const data = localStorage.getItem(DB_KEY);
-    if (!data) {
-      this.save(initialData);
-      return initialData;
+  async signIn(email: string, pass: string) {
+    if (!isConfigured) return { data: null, error: { message: 'Supabase não configurado.' } };
+    return await supabase.auth.signInWithPassword({ email, password: pass });
+  },
+
+  async signOut() {
+    return await supabase.auth.signOut();
+  },
+
+  async getUser() {
+    const { data } = await supabase.auth.getUser();
+    return data.user;
+  },
+
+  async get(): Promise<AppData> {
+    try {
+      if (!isConfigured) throw new Error('Supabase não configurado');
+      
+      const [settingsRes, leadsRes, inventoryRes, drinksRes] = await Promise.all([
+        supabase.from('site_settings').select('*'),
+        supabase.from('leads').select('*').order('created_at', { ascending: false }),
+        supabase.from('inventory').select('*'),
+        supabase.from('drinks').select('*')
+      ]);
+
+      const settings = settingsRes.data;
+      const getSetting = (key: string) => settings?.find(s => s.key === key)?.value;
+
+      return {
+        pricing: getSetting('pricing') || {
+          baseAlcohol: 65,
+          baseNonAlcohol: 45,
+          baseMisto: 55,
+          extraHourMultiplier: 0.15,
+          specialDrinkFee: 5,
+          premiumLabelFee: 18,
+          counterFixedFee: 100,
+          glasswareFixedFee: 2.5,
+          staffHourlyRate: 35
+        },
+        about: getSetting('about') || {
+          history: 'Nossa história...',
+          mission: 'Nossa missão...',
+          vision: 'Nossa visão...',
+          values: []
+        },
+        gallery: getSetting('gallery') || [],
+        caipiFlavors: getSetting('caipi_flavors') || [],
+        frozenFlavors: getSetting('frozen_flavors') || [],
+        testimonials: getSetting('testimonials') || [],
+        services: getSetting('services') || [],
+        leads: leadsRes.data || [],
+        inventory: inventoryRes.data || [],
+        drinks: drinksRes.data || []
+      };
+    } catch (err) {
+      console.error('Erro ao buscar dados:', err);
+      return {
+        pricing: { baseAlcohol: 65, baseNonAlcohol: 45, baseMisto: 55, extraHourMultiplier: 0.15, specialDrinkFee: 5, premiumLabelFee: 18, counterFixedFee: 100, glasswareFixedFee: 2.5, staffHourlyRate: 35 },
+        about: { history: '', mission: '', vision: '', values: [] },
+        gallery: [], caipiFlavors: [], frozenFlavors: [], testimonials: [], services: [], leads: [], inventory: [], drinks: []
+      };
     }
-    return JSON.parse(data);
   },
 
-  save(data: AppData) {
-    localStorage.setItem(DB_KEY, JSON.stringify(data));
+  async updatePricing(newPricing: PricingConfig) {
+    await supabase.from('site_settings').upsert({ key: 'pricing', value: newPricing });
   },
 
-  updatePricing(newPricing: PricingConfig) {
-    const data = this.get();
-    data.pricing = newPricing;
-    this.save(data);
+  async updateQuoteConfig(updates: Partial<Pick<AppData, 'caipiFlavors' | 'frozenFlavors'>>) {
+    for (const [key, value] of Object.entries(updates)) {
+      const dbKey = key === 'caipiFlavors' ? 'caipi_flavors' : 'frozen_flavors';
+      await supabase.from('site_settings').upsert({ key: dbKey, value });
+    }
   },
 
-  updateQuoteConfig(updates: Partial<Pick<AppData, 'caipiFlavors' | 'frozenFlavors'>>) {
-    const data = this.get();
-    Object.assign(data, updates);
-    this.save(data);
+  async updateDrinks(newDrinks: Drink[]) {
+    for (const drink of newDrinks) {
+      await supabase.from('drinks').upsert(drink);
+    }
   },
 
-  updateDrinks(newDrinks: Drink[]) {
-    const data = this.get();
-    data.drinks = newDrinks;
-    this.save(data);
+  async deleteDrink(id: string) {
+    await supabase.from('drinks').delete().eq('id', id);
   },
 
-  deleteDrink(id: string) {
-    const data = this.get();
-    data.drinks = data.drinks.filter(d => d.id !== id);
-    this.save(data);
+  async addInventoryItem(item: InventoryItem) {
+    await supabase.from('inventory').insert(item);
   },
 
-  addInventoryItem(item: InventoryItem) {
-    const data = this.get();
-    data.inventory.push(item);
-    this.save(data);
+  async updateInventoryItem(id: string, updates: Partial<InventoryItem>) {
+    await supabase.from('inventory').update(updates).eq('id', id);
   },
 
-  updateInventoryItem(id: string, updates: Partial<InventoryItem>) {
-    const data = this.get();
-    data.inventory = data.inventory.map(item => item.id === id ? { ...item, ...updates } : item);
-    this.save(data);
+  async deleteInventoryItem(id: string) {
+    await supabase.from('inventory').delete().eq('id', id);
   },
 
-  deleteInventoryItem(id: string) {
-    const data = this.get();
-    data.inventory = data.inventory.filter(item => item.id !== id);
-    this.save(data);
+  async addLead(lead: any) {
+    const dbLead = {
+      name: lead.name,
+      phone: lead.phone,
+      guests: parseInt(lead.guests),
+      location: lead.location,
+      event_date: lead.date,
+      event_time: lead.time,
+      duration: parseInt(lead.duration),
+      plan_type: lead.planType,
+      total: lead.total,
+      status: 'Pendente',
+      caipi_flavors: lead.caipiFlavors,
+      frozen_flavors: lead.frozenFlavors,
+      special_drinks: lead.specialDrinks,
+      cup_type: lead.cupType,
+      glass_quantity: parseInt(lead.glassQuantity) || null
+    };
+    await supabase.from('leads').insert(dbLead);
   },
 
-  addLead(lead: any) {
-    const data = this.get();
-    data.leads.unshift({ ...lead, id: Date.now(), status: 'Pendente' });
-    this.save(data);
+  async updateLeadStatus(id: number, status: Lead['status']) {
+    await supabase.from('leads').update({ status }).eq('id', id);
   },
 
-  updateLeadStatus(id: number, status: Lead['status']) {
-    const data = this.get();
-    data.leads = data.leads.map(l => l.id === id ? { ...l, status } : l);
-    this.save(data);
+  async deleteLead(id: number) {
+    await supabase.from('leads').delete().eq('id', id);
   },
 
-  deleteLead(id: number) {
-    const data = this.get();
-    data.leads = data.leads.filter(l => l.id !== id);
-    this.save(data);
+  async updateGallery(images: string[]) {
+    await supabase.from('site_settings').upsert({ key: 'gallery', value: images });
   },
 
-  updateGallery(images: string[]) {
-    const data = this.get();
-    data.gallery = images;
-    this.save(data);
+  async updateTestimonials(testimonials: Testimonial[]) {
+    await supabase.from('site_settings').upsert({ key: 'testimonials', value: testimonials });
   },
 
-  updateTestimonials(testimonials: Testimonial[]) {
-    const data = this.get();
-    data.testimonials = testimonials;
-    this.save(data);
+  async updateServices(services: Service[]) {
+    await supabase.from('site_settings').upsert({ key: 'services', value: services });
   },
 
-  updateServices(services: Service[]) {
-    const data = this.get();
-    data.services = services;
-    this.save(data);
-  },
-
-  updateAbout(about: AboutContent) {
-    const data = this.get();
-    data.about = about;
-    this.save(data);
+  async updateAbout(about: AboutContent) {
+    await supabase.from('site_settings').upsert({ key: 'about', value: about });
   }
 };

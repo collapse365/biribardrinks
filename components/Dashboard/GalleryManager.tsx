@@ -9,7 +9,8 @@ const GalleryManager: React.FC = () => {
   const [newImageUrl, setNewImageUrl] = useState('');
 
   useEffect(() => {
-    setImages(db.get().gallery || []);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => setImages(data.gallery || []));
   }, []);
 
   const handleAddImage = () => {

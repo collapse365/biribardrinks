@@ -17,7 +17,8 @@ const ServicesManager: React.FC = () => {
   const [editingService, setEditingService] = useState<Service | null>(null);
 
   useEffect(() => {
-    setServices(db.get().services || []);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => setServices(data.services || []));
   }, []);
 
   const handleSave = () => {

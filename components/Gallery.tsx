@@ -6,7 +6,8 @@ const Gallery: React.FC = () => {
   const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
-    setImages(db.get().gallery || []);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => setImages(data.gallery || []));
   }, []);
 
   return (

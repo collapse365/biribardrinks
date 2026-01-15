@@ -18,8 +18,9 @@ import {
   Beer,
   Droplets,
   Wine,
+  Loader2
 } from 'lucide-react';
-import { db, PricingConfig, AppData, Drink } from '../db';
+import { db, AppData } from '../db';
 
 const PLAN_TYPES = [
   { id: 'com-alcool', name: 'Com Álcool', icon: Beer },
@@ -50,9 +51,14 @@ const QuotePage: React.FC = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [appData, setAppData] = useState<AppData | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    setAppData(db.get());
+    const load = async () => {
+      const data = await db.get();
+      setAppData(data);
+    };
+    load();
   }, []);
 
   const [data, setData] = useState({
@@ -84,34 +90,28 @@ const QuotePage: React.FC = () => {
     const nHours = parseInt(data.duration) || 4;
     const pricing = appData.pricing;
     
-    // 1. Cálculo do valor por pessoa (PPG) baseado no plano
     let ppg = data.planType === 'com-alcool' ? pricing.baseAlcohol : data.planType === 'sem-alcool' ? pricing.baseNonAlcohol : pricing.baseMisto;
-    
-    // Adicional de horas extras no valor por pessoa
-    if (nHours > 4) {
-      ppg += ppg * ((nHours - 4) * pricing.extraHourMultiplier);
-    }
-    
-    // Adicional de rótulos premium
-    if (data.labels.vodka.some(v => v.includes('Premium')) || data.labels.gin.some(g => g.includes('Premium'))) {
-      ppg += pricing.premiumLabelFee;
-    }
-    
-    // Adicional de drinks especiais por pessoa
+    if (nHours > 4) ppg += ppg * ((nHours - 4) * pricing.extraHourMultiplier);
+    if (data.labels.vodka.some(v => v.includes('Premium')) || data.labels.gin.some(g => g.includes('Premium'))) ppg += pricing.premiumLabelFee;
     ppg += (data.specialDrinks.length * pricing.specialDrinkFee);
 
-    // 2. Cálculo do custo de equipe (Staff)
-    // Regra: 1 barman para cada 50 convidados (mínimo 1)
-    const staffNeeded = Math.ceil(nGuests / 50) || 1;
-    const staffCost = staffNeeded * pricing.staffHourlyRate * nHours;
+    let laborCost = 0;
+    const n = nGuests;
+    if (n >= 0 && n <= 25) laborCost = n * 15;
+    else if (n >= 26 && n <= 35) laborCost = n * 13.33;
+    else if (n >= 36 && n <= 49) laborCost = n * 10;
+    else if (n >= 50 && n <= 60) laborCost = 500;
+    else if (n >= 61 && n <= 74) laborCost = n * 8.50;
+    else if (n >= 75 && n <= 90) laborCost = 600;
+    else if (n >= 91 && n <= 100) laborCost = 700;
+    else if (n >= 101 && n <= 149) laborCost = n * 7;
+    else if (n >= 150 && n <= 199) laborCost = 800;
+    else if (n === 200) laborCost = 900;
+    else if (n >= 201 && n <= 300) laborCost = 1000;
+    else if (n > 300) laborCost = 1000 + (n - 300) * 3.5;
 
-    // 3. Somatória Final
-    let total = (ppg * nGuests) + staffCost;
-    
-    // Taxas fixas de estrutura
+    let total = (ppg * nGuests) + laborCost;
     if (data.needsCounter) total += pricing.counterFixedFee;
-    
-    // Aluguel de taças de vidro (preço unitário)
     if (data.cupType === 'glass') {
       const qTaças = parseInt(data.glassQuantity) || 0;
       total += (qTaças * pricing.glasswareFixedFee);
@@ -120,10 +120,12 @@ const QuotePage: React.FC = () => {
     return total;
   }, [data, appData]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentKey === 'summary') {
-      db.addLead({ ...data, total: totalBudget });
-      alert('Pedido de orçamento enviado! Nossa equipe entrará em contato.');
+      setIsSubmitting(true);
+      await db.addLead({ ...data, total: totalBudget });
+      setIsSubmitting(false);
+      alert('Pedido de orçamento enviado com sucesso! Nossa equipe entrará em contato via WhatsApp.');
       navigate('/');
     } else {
       setCurrentStep(prev => prev + 1);
@@ -133,14 +135,20 @@ const QuotePage: React.FC = () => {
   const renderContinueButton = (disabled: boolean = false) => (
     <button 
       onClick={handleNext} 
-      disabled={disabled}
+      disabled={disabled || isSubmitting}
       className="w-full mt-6 py-5 bg-brand-gold text-brand-richBlack font-bold uppercase tracking-[0.2em] rounded-xl hover:scale-[1.02] transition-all shadow-xl flex items-center justify-center gap-2 disabled:opacity-30 disabled:scale-100"
     >
-      Continuar <ChevronRight className="w-5 h-5" />
+      {isSubmitting ? <Loader2 className="animate-spin" /> : <>Continuar <ChevronRight className="w-5 h-5" /></>}
     </button>
   );
 
-  if (!appData) return null;
+  if (!appData) {
+    return (
+      <div className="min-h-screen bg-brand-richBlack flex items-center justify-center">
+        <Loader2 className="w-12 h-12 text-brand-gold animate-spin" />
+      </div>
+    );
+  }
 
   const renderQuestion = () => {
     switch (currentKey) {
@@ -226,20 +234,11 @@ const QuotePage: React.FC = () => {
         </QuestionWrapper>
       );
       case 'glassQuantity': return (
-        <QuestionWrapper title="Quantidade de Taças?" subtitle="Quantas taças deseja alugar para o seu evento?">
+        <QuestionWrapper title="Quantidade de Taças?">
           <div className="relative">
             <Wine className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-brand-gold"/>
-            <input 
-              autoFocus 
-              type="number" 
-              placeholder="Ex: 200" 
-              value={data.glassQuantity} 
-              onChange={e => setData({...data, glassQuantity: e.target.value})} 
-              onKeyDown={e => e.key === 'Enter' && data.glassQuantity && handleNext()} 
-              className="w-full bg-brand-graphite border border-white/10 rounded-xl p-5 pl-14 text-white focus:border-brand-gold focus:outline-none text-lg"
-            />
+            <input autoFocus type="number" placeholder="Ex: 200" value={data.glassQuantity} onChange={e => setData({...data, glassQuantity: e.target.value})} onKeyDown={e => e.key === 'Enter' && data.glassQuantity && handleNext()} className="w-full bg-brand-graphite border border-white/10 rounded-xl p-5 pl-14 text-white focus:border-brand-gold focus:outline-none text-lg"/>
           </div>
-          <p className="text-center text-xs text-gray-500 font-medium">Recomendamos pelo menos 1.5 taças por convidado.</p>
           {renderContinueButton(!data.glassQuantity)}
         </QuestionWrapper>
       );
@@ -259,12 +258,12 @@ const QuotePage: React.FC = () => {
             <div className="space-y-2 text-xs text-gray-400">
                <p>• <strong>Plano:</strong> {PLAN_TYPES.find(p=>p.id===data.planType)?.name}</p>
                <p>• <strong>Convidados:</strong> {data.guests}</p>
-               <p>• <strong>Tipo de Copos:</strong> {data.cupType === 'glass' ? `Taças de Vidro (${data.glassQuantity} un)` : 'Copos Descartáveis (Padrão)'}</p>
+               <p>• <strong>Copos:</strong> {data.cupType === 'glass' ? `Vidro (${data.glassQuantity})` : 'Descartável'}</p>
                <p>• <strong>Frutas:</strong> {data.caipiFlavors.join(', ')}</p>
-               <p>• <strong>Especiais:</strong> {data.specialDrinks.length > 0 ? data.specialDrinks.map(d=>d.name).join(', ') : 'Nenhum'}</p>
-               <p>• <strong>Serviço:</strong> Inclui equipe profissional calculada para {data.duration}h</p>
             </div>
-            <button onClick={handleNext} className="w-full py-5 bg-brand-gold text-brand-richBlack font-bold uppercase tracking-[0.2em] rounded-xl hover:scale-105 transition-all shadow-xl flex items-center justify-center gap-3">Confirmar Pedido <Sparkles className="w-5 h-5"/></button>
+            <button onClick={handleNext} disabled={isSubmitting} className="w-full py-5 bg-brand-gold text-brand-richBlack font-bold uppercase tracking-[0.2em] rounded-xl hover:scale-105 transition-all shadow-xl flex items-center justify-center gap-3">
+              {isSubmitting ? <Loader2 className="animate-spin" /> : <>Confirmar Pedido <Sparkles className="w-5 h-5"/></>}
+            </button>
           </div>
         </div>
       );
@@ -276,7 +275,7 @@ const QuotePage: React.FC = () => {
     <div className="min-h-screen bg-brand-richBlack font-montserrat flex flex-col text-white">
       <header className="h-20 border-b border-white/5 bg-brand-graphite flex items-center px-6 sticky top-0 z-50">
         <Link to="/" className="flex items-center gap-2 text-gray-400 hover:text-brand-gold"><ChevronLeft className="w-5 h-5" /><span>Sair</span></Link>
-        <div className="flex-grow text-center font-cinzel font-bold text-brand-gold tracking-widest">BIRIBAR PLANNER</div>
+        <div className="flex-grow text-center font-cinzel font-bold text-brand-gold tracking-widest uppercase text-xs">BIRIBAR PLANNER</div>
       </header>
       <div className="h-1 bg-white/5"><div className="h-full bg-brand-gold transition-all duration-700" style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}/></div>
       <main className="flex-grow flex items-center justify-center p-6"><div className="w-full max-w-3xl">{renderQuestion()}</div></main>

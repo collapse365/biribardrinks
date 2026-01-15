@@ -16,11 +16,13 @@ const MenuManager: React.FC = () => {
   const [newFlavorText, setNewFlavorText] = useState('');
 
   useEffect(() => {
-    const data = db.get();
-    setDrinks(data.drinks || []);
-    setInventory(data.inventory || []);
-    setCaipiFlavors(data.caipiFlavors || []);
-    setFrozenFlavors(data.frozenFlavors || []);
+    // Fix: db.get() returns a Promise<AppData>, handle it asynchronously.
+    db.get().then(data => {
+      setDrinks(data.drinks || []);
+      setInventory(data.inventory || []);
+      setCaipiFlavors(data.caipiFlavors || []);
+      setFrozenFlavors(data.frozenFlavors || []);
+    });
   }, []);
 
   const handleSaveDrink = () => {

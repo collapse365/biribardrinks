@@ -21,9 +21,17 @@ import GalleryManager from './GalleryManager';
 import TestimonialsManager from './TestimonialsManager';
 import ServicesManager from './ServicesManager';
 import AboutManager from './AboutManager';
+import { db } from '../../db';
 
 const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    if (confirm('Deseja encerrar sua sessão administrativa?')) {
+      await db.signOut();
+      navigate('/login');
+    }
+  };
 
   const menuItems = [
     { path: '/dashboard/events', icon: Briefcase, label: 'Gestão de Eventos' },
@@ -68,13 +76,13 @@ const DashboardLayout: React.FC = () => {
         </nav>
 
         <div className="p-6 mt-auto border-t border-white/5">
-          <Link 
-            to="/"
-            className="w-full flex items-center gap-4 px-5 py-4 text-gray-500 hover:text-red-400 font-bold uppercase tracking-widest text-[10px] transition-colors"
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-4 px-5 py-4 text-gray-500 hover:text-red-400 font-bold uppercase tracking-widest text-[10px] transition-colors text-left"
           >
             <LogOut className="w-5 h-5" />
             Sair do Sistema
-          </Link>
+          </button>
         </div>
       </aside>
 
