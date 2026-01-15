@@ -1,7 +1,7 @@
-
-import React, { useState } from 'react';
-import { Menu, X, ChevronRight, Lock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, X, ChevronRight, Lock, LogOut, LayoutDashboard } from 'lucide-react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { supabase, db } from '../db';
 
 interface HeaderProps {
   scrolled: boolean;
@@ -9,8 +9,23 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ scrolled }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    // Verificar sessão inicial
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Escutar mudanças de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navItems = [
     { name: 'Início', target: 'home', isExternal: false, isRoute: true, path: '/' },
@@ -19,6 +34,18 @@ const Header: React.FC<HeaderProps> = ({ scrolled }) => {
     { name: 'Galeria', target: 'https://instagram.com/biribardrinks', isExternal: true, isRoute: false },
     { name: 'Depoimentos', target: 'testimonials', isExternal: false, isRoute: false },
   ];
+
+  const handleLogout = async () => {
+    if (window.confirm('Deseja realmente sair do sistema?')) {
+      await db.signOut();
+      // Limpa estado local do componente
+      setUser(null);
+      setIsOpen(false);
+      // Força redirecionamento via navegador para o início, ignorando o hash do Router
+      // para garantir que a aplicação seja reinicializada sem cache de sessão.
+      window.location.href = window.location.origin + window.location.pathname;
+    }
+  };
 
   const scrollToSection = (id: string) => {
     setIsOpen(false);
@@ -75,13 +102,36 @@ const Header: React.FC<HeaderProps> = ({ scrolled }) => {
                 {item.name}
               </button>
             ))}
-            <Link 
-              to="/dashboard"
-              className="text-gray-400 hover:text-brand-gold transition-colors flex items-center gap-1 text-[10px] uppercase font-bold tracking-[0.2em]"
-            >
-              <Lock className="w-3 h-3" />
-              Restrito
-            </Link>
+            
+            {/* Links de Administração / Logout */}
+            <div className="flex items-center border-l border-white/10 pl-6 gap-4">
+              {user ? (
+                <>
+                  <Link 
+                    to="/dashboard"
+                    className="text-brand-gold hover:text-white transition-colors flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-[0.2em]"
+                  >
+                    <LayoutDashboard className="w-3.5 h-3.5" />
+                    Painel
+                  </Link>
+                  <button 
+                    onClick={handleLogout}
+                    className="text-red-500/80 hover:text-red-500 transition-colors flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-[0.2em]"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    Sair
+                  </button>
+                </>
+              ) : (
+                <Link 
+                  to="/login"
+                  className="text-gray-400 hover:text-brand-gold transition-colors flex items-center gap-1.5 text-[10px] uppercase font-bold tracking-[0.2em]"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  Restrito
+                </Link>
+              )}
+            </div>
           </div>
           
           <Link
@@ -104,7 +154,7 @@ const Header: React.FC<HeaderProps> = ({ scrolled }) => {
 
       {/* Mobile Menu */}
       <div className={`fixed inset-0 bg-brand-richBlack z-40 transition-transform duration-500 ${isOpen ? 'translate-x-0' : 'translate-x-full'} md:hidden`}>
-        <div className="flex flex-col items-center justify-center h-full space-y-10">
+        <div className="flex flex-col items-center justify-center h-full space-y-8">
           {navItems.map((item) => (
             <button
               key={item.name}
@@ -114,11 +164,39 @@ const Header: React.FC<HeaderProps> = ({ scrolled }) => {
               {item.name}
             </button>
           ))}
-          <Link to="/dashboard" onClick={() => setIsOpen(false)} className="text-brand-gold uppercase tracking-widest font-bold">Painel Admin</Link>
+          
+          <div className="w-2/3 h-px bg-white/5 my-4"></div>
+          
+          {user ? (
+            <div className="flex flex-col items-center gap-6">
+              <Link 
+                to="/dashboard" 
+                onClick={() => setIsOpen(false)} 
+                className="text-brand-gold uppercase tracking-widest font-bold flex items-center gap-2"
+              >
+                <LayoutDashboard className="w-5 h-5" /> Painel Admin
+              </Link>
+              <button 
+                onClick={handleLogout}
+                className="text-red-500 uppercase tracking-widest font-bold flex items-center gap-2"
+              >
+                <LogOut className="w-5 h-5" /> Sair da Conta
+              </button>
+            </div>
+          ) : (
+            <Link 
+              to="/login" 
+              onClick={() => setIsOpen(false)} 
+              className="text-gray-500 uppercase tracking-widest font-bold"
+            >
+              Acesso Restrito
+            </Link>
+          )}
+
           <Link
             to="/quote"
             onClick={() => setIsOpen(false)}
-            className="px-8 py-4 bg-brand-gold text-brand-richBlack text-lg font-bold uppercase tracking-widest rounded-sm"
+            className="mt-4 px-8 py-4 bg-brand-gold text-brand-richBlack text-lg font-bold uppercase tracking-widest rounded-sm"
           >
             Solicitar Orçamento
           </Link>

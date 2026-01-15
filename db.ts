@@ -1,21 +1,19 @@
-
 import { createClient } from '@supabase/supabase-js';
 
 /**
  * CONFIGURAÇÃO OFICIAL SUPABASE - BIRIBAR DRINK'S
  */
 const SUPABASE_URL = 'https://lhxxpiktgtbeowflqzzj.supabase.co'; 
-// A chave abaixo foi extraída da sua última mensagem e validada como formato correto para Supabase.
-const SUPABASE_ANON_KEY: string = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxoeHhwaWt0Z3RiZW93ZmxxenpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0OTgxMDAsImV4cCI6MjA4NDA3NDEwMH0.Lh6F8lA_-2B6rXByVkW8-ArbdPR5rMkuRyGJJ_qhbwY';
+const SUPABASE_ANON_KEY: string = 'sb_publishable_rIZn2texoXNYTd1X4Z0aWw_HykPoBCb';
 
-// Lógica de verificação robusta: se a chave começar com 'eyJ' e for longa, está configurada.
-const isConfigured = SUPABASE_ANON_KEY.startsWith('eyJ') && SUPABASE_ANON_KEY.length > 50;
+// Verifica se a chave é válida
+const isConfigured = SUPABASE_ANON_KEY.length > 20;
 
 if (!isConfigured) {
   console.warn('⚠️ CONFIGURAÇÃO PENDENTE: A chave do Supabase em db.ts parece inválida ou ausente.');
 }
 
-export const supabase = createClient(SUPABASE_URL, isConfigured ? SUPABASE_ANON_KEY : 'invalid-key-placeholder');
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export interface PricingConfig {
   baseAlcohol: number;
@@ -112,12 +110,25 @@ export interface AppData {
 
 export const db = {
   async signIn(email: string, pass: string) {
-    if (!isConfigured) return { data: null, error: { message: 'Supabase não configurado.' } };
-    return await supabase.auth.signInWithPassword({ email, password: pass });
+    return await supabase.auth.signInWithPassword({ email: email, password: pass });
   },
 
   async signOut() {
-    return await supabase.auth.signOut();
+    try {
+      // Logout global no Supabase
+      await supabase.auth.signOut({ scope: 'global' });
+      
+      // Limpeza de tokens no localStorage e sessionStorage
+      [localStorage, sessionStorage].forEach(storage => {
+        Object.keys(storage).forEach(key => {
+          if (key.startsWith('sb-') || key.includes('supabase')) {
+            storage.removeItem(key);
+          }
+        });
+      });
+    } catch (e) {
+      console.error("Erro no signOut:", e);
+    }
   },
 
   async getUser() {
@@ -127,8 +138,6 @@ export const db = {
 
   async get(): Promise<AppData> {
     try {
-      if (!isConfigured) throw new Error('Supabase não configurado');
-      
       const [settingsRes, leadsRes, inventoryRes, drinksRes] = await Promise.all([
         supabase.from('site_settings').select('*'),
         supabase.from('leads').select('*').order('created_at', { ascending: false }),

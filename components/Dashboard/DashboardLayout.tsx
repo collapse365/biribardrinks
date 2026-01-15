@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
   Wine, 
@@ -27,9 +26,10 @@ const DashboardLayout: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    if (confirm('Deseja encerrar sua sessão administrativa?')) {
+    if (window.confirm('Deseja encerrar sua sessão administrativa?')) {
       await db.signOut();
-      navigate('/login');
+      // Reset total da aplicação para garantir que a sessão foi destruída
+      window.location.href = window.location.origin + window.location.pathname;
     }
   };
 
