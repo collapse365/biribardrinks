@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Image as ImageIcon, Upload, X, Check, Save, Instagram, RefreshCw, Loader2, Search } from 'lucide-react';
 import { db } from '../../db';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 const GalleryManager: React.FC = () => {
   const [images, setImages] = useState<string[]>([]);
@@ -26,42 +26,60 @@ const GalleryManager: React.FC = () => {
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      
+      // Quando usamos googleSearch, não podemos usar responseSchema ou responseMimeType JSON.
+      // Precisamos extrair as URLs do texto e do groundingMetadata.
       const response = await ai.models.generateContent({
-        model: "gemini-3-pro-preview",
-        contents: `Encontre as URLs das imagens de alta qualidade mais recentes do perfil do Instagram https://www.instagram.com/${igHandle}. 
-                   Retorne apenas uma lista JSON com no máximo 12 URLs de imagens diretas que funcionem como fontes de imagem. 
-                   Foque em fotos de drinks, balcões e eventos.`,
+        model: "gemini-3-flash-preview",
+        contents: `Acesse o perfil do Instagram https://www.instagram.com/${igHandle} e identifique as URLs diretas das imagens (CDN/Static) das postagens mais recentes de drinks e eventos. Liste as URLs das imagens encontradas separadas por vírgula.`,
         config: {
-          tools: [{ googleSearch: {} }],
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              imageUrls: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING }
-              }
-            },
-            required: ["imageUrls"]
-          }
+          tools: [{ googleSearch: {} }]
         },
       });
 
-      const result = JSON.parse(response.text || '{"imageUrls": []}');
-      if (result.imageUrls && result.imageUrls.length > 0) {
-        const newImages = [...new Set([...result.imageUrls, ...images])].slice(0, 24);
-        setImages(newImages);
+      const responseText = response.text || "";
+      const groundingChunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      
+      // Coletamos URLs do texto da resposta e das fontes de busca
+      const foundUrls: string[] = [];
+      
+      // 1. Extrair URLs do texto (procurando padrões de imagem)
+      const urlRegex = /(https?:\/\/[^\s,]+?\.(?:jpg|jpeg|png|webp|gif))/gi;
+      const matches = responseText.match(urlRegex);
+      if (matches) foundUrls.push(...matches);
+
+      // 2. Extrair das fontes da busca (grounding chunks)
+      groundingChunks.forEach((chunk: any) => {
+        if (chunk.web?.uri) {
+          // Se for um link direto de imagem ou conter padrões de CDN
+          if (chunk.web.uri.match(/\.(jpg|jpeg|png|webp)/i) || chunk.web.uri.includes('fbcdn.net')) {
+            foundUrls.push(chunk.web.uri);
+          }
+        }
+      });
+
+      // 3. Filtrar links duplicados e inválidos
+      const validImages = [...new Set(foundUrls)].filter(url => 
+        url.startsWith('http') && (url.includes('cdn') || url.includes('instagram') || url.match(/\.(jpg|jpeg|png|webp)/i))
+      );
+
+      if (validImages.length > 0) {
+        const updatedGallery = [...new Set([...validImages, ...images])].slice(0, 32);
+        setImages(updatedGallery);
+        
         const now = new Date().toLocaleString('pt-BR');
         setLastSync(now);
-        await db.updateGallery(newImages);
+        
+        await db.updateGallery(updatedGallery);
         await db.updateInstagramSettings(igHandle, now);
-        alert('Galeria sincronizada com sucesso com o Instagram!');
+        
+        alert(`Sincronização concluída! ${validImages.length} novas referências encontradas.`);
       } else {
-        alert('Não foi possível encontrar novas fotos públicas. Verifique se o perfil não é privado.');
+        alert('O modelo encontrou o perfil, mas não conseguiu extrair URLs de imagens diretas. Tente adicionar algumas manualmente ou verifique se o perfil é público.');
       }
     } catch (error) {
-      console.error('Erro ao sincronizar:', error);
-      alert('Erro na sincronização inteligente. Tente novamente mais tarde.');
+      console.error('Erro na sincronização Gemini:', error);
+      alert('Erro técnico na conexão com a Inteligência Artificial. Verifique sua chave de API ou tente novamente em instantes.');
     } finally {
       setIsSyncing(false);
     }
@@ -103,7 +121,7 @@ const GalleryManager: React.FC = () => {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
           <h2 className="text-3xl font-cinzel font-bold text-white">Curadoria Visual</h2>
-          <p className="text-gray-500 mt-1">Gerencie seu portfólio manual ou sincronize com o Instagram.</p>
+          <p className="text-gray-500 mt-1">Gerencie seu portfólio manual ou sincronize com o Instagram através de IA.</p>
         </div>
         <div className="flex gap-4">
           <button 
@@ -123,19 +141,18 @@ const GalleryManager: React.FC = () => {
         </div>
       </div>
 
-      {/* IG Status Card */}
       <div className="bg-brand-graphite p-6 rounded-2xl border border-white/5 flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 rounded-xl flex items-center justify-center text-white shadow-lg">
             <Instagram className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Perfil Conectado</p>
+            <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Perfil Monitorado</p>
             <p className="text-white font-bold">@ {igHandle}</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Última Atualização</p>
+          <p className="text-[10px] uppercase font-bold text-gray-500 tracking-widest">Última Varredura</p>
           <p className="text-brand-gold font-medium text-sm">{lastSync || 'Nunca sincronizado'}</p>
         </div>
       </div>
@@ -184,7 +201,7 @@ const GalleryManager: React.FC = () => {
                 <Trash2 className="w-5 h-5" />
               </button>
             </div>
-            {img.startsWith('http') && (img.includes('instagram') || img.includes('fbcdn')) && (
+            {(img.startsWith('http') && (img.includes('instagram') || img.includes('fbcdn'))) && (
               <div className="absolute top-2 left-2 bg-black/50 backdrop-blur-md p-1.5 rounded-lg">
                 <Instagram className="w-3 h-3 text-white" />
               </div>
